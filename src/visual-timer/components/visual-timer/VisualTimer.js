@@ -5,29 +5,37 @@ import "./VisualTimer.scss";
 
 export class VisualTimer extends React.Component {
 
-    timer;
+    /* JavaScript setInterval timer instance */
+    timer = null;
+
+    style = 'flipclock';
+
     totalSecs = 0;
     alarmSecs = 3;
 
+    running = false;
+
+    state = {
+        started: false,
+        alarming: false,
+        stopped: false,
+        elapsedSecs: 0,
+        clockFace: {
+            /* Store display values for two digits of each time component
+            * Updated by timer logic, and read by render()  */
+            hour1: 0,
+            hour2: 0,
+            min1: 0,
+            min2: 0,
+            sec1: 0,
+            sec2: 0
+        }
+    };
+
     constructor(props) {
         super(props);
+
         this.totalSecs = (props.seconds || (props.minutes || 0) * 60) || 0;
-        this.state = {
-            started: false,
-            alarming: false,
-            stopped: false,
-            elapsedSecs: 0,
-            clockFace: {
-                /* Store display values for two digits of each time component
-                * Updated by timer logic, and read by render()  */
-                hour1: 0,
-                hour2: 0,
-                min1: 0,
-                min2: 0,
-                sec1: 0,
-                sec2: 0
-            }
-        };
     }
 
     updateClockFace(remainingSecs) {
@@ -37,39 +45,69 @@ export class VisualTimer extends React.Component {
         const mins = Math.floor(remainingSecs / 60) % (this.props.showHours ? 60 : 61);
         const min2 = mins % 10;
         const min1 = Math.floor(mins / 10);
-        this.setState({ clockFace: { sec1, sec2, min1, min2 } });
-        if (this.showHours) {
+        let hour1 = 0;
+        let hour2 = 0;
+        if (this.props.showHours) {
             const hours = Math.floor(remainingSecs / 3600) % 60;
-            const hour2 = hours % 10;
-            const hour1 = Math.floor(hours / 10);
-            this.setState({ clockFace: { hour1, hour2 } });
+            hour2 = hours % 10;
+            hour1 = Math.floor(hours / 10);
+            this.setState({clockFace: {hour1, hour2}});
         }
+        this.setState({clockFace: {sec1, sec2, min1, min2, hour1, hour2}});
     }
 
     start() {
         if (!this.totalSecs) return;
-        const scale = 1;
-        this.timer = setInterval(() => {
-            if (!this.state.started || this.state.stopped) return;
-            this.setState({ elapsedSecs: this.state.elapsedSecs+1 });
-            const remainingSecs = this.totalSecs - this.state.elapsedSecs;
-            if (remainingSecs < 0) {
-                this.stop();
-            } else {
-                this.setState({
-                    alarming: remainingSecs < this.alarmSecs});
-                this.updateClockFace(remainingSecs);
-            }
-        }, Math.round(1000 / scale));
+        if (!this.timer) {
+            const speed = Math.round(this.props.speed || 1);
+            this.timer = setInterval(() => {
+                    if (!this.state.started || this.state.stopped) return;
+                    this.setState(state => ({elapsedSecs: state.elapsedSecs + 1}));
+                    const remainingSecs = this.totalSecs - this.state.elapsedSecs;
+                    if (remainingSecs <= 0) {
+                        this.end();
+                    }
+                    this.setState({
+                        alarming: remainingSecs < this.alarmSecs
+                    });
+                    this.updateClockFace(remainingSecs);
+                },
+                /* calling timer handler every one second, or less depending on speed */
+                Math.round(1000 / speed)
+            );
+        }
         this.setState(
-            { started: true });
+            {started: true, stopped: false});
     }
 
     stop() {
         this.setState(
-            { stopped: true });
+            {stopped: true});
+    }
+
+    end() {
+        this.setState(
+            {started: false, stopped: false});
         if (this.timer) {
             clearInterval(this.timer);
+        }
+    }
+
+    componentDidMount() {
+        this.updateClockFace(this.totalSecs);
+        if (this.props.autoStart) {
+            this.start();
+            this.forceUpdate();
+        }
+    }
+
+    componentDidUpdate() {
+        if (this.running === this.props.running) return;
+        this.running = this.props.running;
+        if ((!this.state.started || this.state.stopped) && this.props.running) {
+            this.start();
+        } else if (this.state.started && !this.state.stopped && this.props.running === false) {
+            this.stop();
         }
     }
 
@@ -77,15 +115,15 @@ export class VisualTimer extends React.Component {
         if (!this.totalSecs) return null;
         const {hour1, hour2, min1, min2, sec1, sec2} = this.state.clockFace;
         return (
-            <div className={'VisualTimer ' + (this.state.alarming ? 'alarming' : '')}
-            style={ { borderStyle: 'solid' } }>
+            <div className={'VisualTimer' + (this.state.alarming ? ' alarming' : '')}
+                 style={{borderStyle: 'solid'}}>
 
                 <div className="countdown">
                     {
                         this.props.showHours &&
                         <div className="bloc-time hours">
                             <span className="count-title">Hours</span>
-                            <div className="figure hours hours-1">
+                            <div className="figure hours hour-1">
                                 <span className="top">{hour1}</span>
                                 <span className="top-back">
                 <span>{hour1}</span>
@@ -96,7 +134,7 @@ export class VisualTimer extends React.Component {
               </span>
                             </div>
 
-                            <div className="figure hours hours-2">
+                            <div className="figure hours hour-2">
                                 <span className="top">{hour2}</span>
                                 <span className="top-back">
                 <span>{hour2}</span>
@@ -106,7 +144,6 @@ export class VisualTimer extends React.Component {
                 <span>{hour2}</span>
               </span>
                             </div>
-
                         </div>
                     }
 
@@ -162,21 +199,17 @@ export class VisualTimer extends React.Component {
                     </div>
                 </div>
 
+                {/*Display visual progress*/}
                 {
                     this.state.started &&
-                   <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs} />
-
+                    <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs}/>
                 }
             </div>
         );
     }
 
-    componentDidMount() {
-        this.start();
-    }
-
     componentWillUnmount() {
-        /*  Clear timer on cleanup. Failing to do this will cause disaster */
+        /*  Dispose timer on cleanup. Failing to do this will cause disaster */
         if (this.timer) {
             clearInterval(this.timer);
         }

@@ -1,15 +1,14 @@
 import React from 'react';
 // import logo from './logo.svg';
 import './App.css';
-
-import {VisualTimer} from "./visual-timer/components/visual-timer/VisualTimer";
+import {Demo} from "./demo/Demo";
 
 function App() {
-  return (
-    <div className="App">
-        <VisualTimer seconds={10} showHours={false} />
-    </div>
-  );
+    return (
+        <div className="App">
+            <Demo/>
+        </div>
+    );
 }
 
 export default App;

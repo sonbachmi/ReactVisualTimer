@@ -1,0 +1,15 @@
+/* Progress bar */
+
+.vtimer-progress {
+  width: 100%;
+  height: 30px;
+  margin-top: 10px;
+  &--bar {
+    width: 100%;
+    background-color: #0076a3;
+    min-width: 0;
+    .alarming & {
+      background-color: crimson;
+    }
+  }
+}

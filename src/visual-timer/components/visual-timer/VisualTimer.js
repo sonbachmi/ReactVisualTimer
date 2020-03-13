@@ -1,7 +1,7 @@
 import React from "react";
 
-import "./VisualTimer.scss";
 import {VisualProgress} from "../visual-progress/VisualProgress";
+import "./VisualTimer.scss";
 
 export class VisualTimer extends React.Component {
 
@@ -15,6 +15,7 @@ export class VisualTimer extends React.Component {
         this.state = {
             started: false,
             alarming: false,
+            stopped: false,
             elapsedSecs: 0,
             clockFace: {
                 /* Store display values for two digits of each time component
@@ -27,7 +28,6 @@ export class VisualTimer extends React.Component {
                 sec2: 0
             }
         };
-        this.start();
     }
 
     updateClockFace(remainingSecs) {
@@ -50,7 +50,7 @@ export class VisualTimer extends React.Component {
         if (!this.totalSecs) return;
         const scale = 1;
         this.timer = setInterval(() => {
-            if (!this.started) return;
+            if (!this.state.started || this.state.stopped) return;
             this.setState({ elapsedSecs: this.state.elapsedSecs+1 });
             const remainingSecs = this.totalSecs - this.state.elapsedSecs;
             if (remainingSecs < 0) {
@@ -61,11 +61,13 @@ export class VisualTimer extends React.Component {
                 this.updateClockFace(remainingSecs);
             }
         }, Math.round(1000 / scale));
-        this.started = true;
+        this.setState(
+            { started: true });
     }
 
     stop() {
-        this.stopped = true;
+        this.setState(
+            { stopped: true });
         if (this.timer) {
             clearInterval(this.timer);
         }
@@ -75,7 +77,8 @@ export class VisualTimer extends React.Component {
         if (!this.totalSecs) return null;
         const {hour1, hour2, min1, min2, sec1, sec2} = this.state.clockFace;
         return (
-            <div className={'VisualTimer ' + (this.state.alarming ? 'alarming' : '')}>
+            <div className={'VisualTimer ' + (this.state.alarming ? 'alarming' : '')}
+            style={ { borderStyle: 'solid' } }>
 
                 <div className="countdown">
                     {
@@ -161,11 +164,15 @@ export class VisualTimer extends React.Component {
 
                 {
                     this.state.started &&
-                    <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs} />
+                   <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs} />
 
                 }
             </div>
         );
+    }
+
+    componentDidMount() {
+        this.start();
     }
 
     componentWillUnmount() {

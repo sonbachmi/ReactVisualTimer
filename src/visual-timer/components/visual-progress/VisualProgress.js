@@ -1,25 +1,26 @@
 import React from "react";
 
+import "./VisualProgress.scss";
+
 export class VisualProgress extends React.Component {
 
     totalSecs = 0;
     elapsedSecs = 0;
+    percentage = '0%';
 
     constructor(props) {
         super(props);
+        /*  totalSecs prop won't change for entire life cycle so safe to copy to instance variable for reuse */
         this.totalSecs = props.totalSecs || 0;
-        this.elapsedSecs = props.elapsedSecs || 0;
-    }
-
-    getProgressPercentage() {
-        return Math.round((this.elapsedSecs * 100) / this.totalSecs) + "%";
     }
 
     render() {
+        this.percentage = Math.floor(((this.props.elapsedSecs||0) * 100)
+            / this.totalSecs) + "%";
         return (
-        <div className="vtimer-progress">
-            <div className="vtimer-progress--bar" style={{
-                width: this.getProgressPercentage(this.state.elapsedSecs)
+        <div className="VisualProgress">
+            <div className="VisualProgress--bar" style={{
+                width: this.percentage
             }}/>
         </div>
         );

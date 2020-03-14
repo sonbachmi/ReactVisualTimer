@@ -6,6 +6,7 @@ import {VisualTimer} from "../visual-timer/components/visual-timer/VisualTimer";
 export class Demo extends React.Component {
     state = {
         timerRunning: false,
+        timerStopped: false,
         showStopButton: false,
         showRestartButton: false,
     };
@@ -29,7 +30,7 @@ export class Demo extends React.Component {
     };
     onStop = () => {
         console.log('stopped');
-        this.setState({timerRunning: false, showStopButton: false});
+        this.setState({timerRunning: false, timerStopped: true, showStopButton: false});
     };
     onEnd = () => {
         console.log('ended');
@@ -44,7 +45,7 @@ export class Demo extends React.Component {
                 {this.state.showRestartButton ?
                     <button onClick={this.restartTimer}>Restart</button>
                     : !this.state.showStopButton ?
-                        <button onClick={this.startTimer}>Start</button>
+                        <button onClick={this.startTimer}>{this.state.timerStopped ? 'Resume' : 'Start'}</button>
                         : <button onClick={this.stopTimer}>Stop</button>
                 }
             </div>

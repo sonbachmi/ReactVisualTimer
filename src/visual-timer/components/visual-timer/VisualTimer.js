@@ -16,21 +16,26 @@ const propTypes = {
     onStart: PropTypes.func,        // Callback when timer starts
     onStop: PropTypes.func,         // Callback when timer stops
     onEnd: PropTypes.func,          // Callback when timer reaches timeout
-    /*  Extra settings  */
-    speed: PropTypes.number         // Speed multiplication factor (x2, etc.) useful for testing long timeout
+    /*  Extra tweaks  */
+    speed: PropTypes.number         // Speed multiplication factor (2 = x2 faster) useful for testing long timeout
 };
 
 export class VisualTimer extends React.Component {
 
+    /* System timer management */
     /* JavaScript setInterval timer instance */
     timer = null;
+    /*  Store start time for each run of timer  */
+    startTime = NaN;
+    /*  Fraction of 1 second for timer interval  */
+    timerResolution = 0.1; // default 10ms. Increase this to save resources, but not above 1
 
     totalSecs = 0;          // Store value for timeout in total seconds
     alarmSecs = 10;          // Store value for alarm timeout in seconds
 
     running = false;        // Store the state of running to detect change against props.running control flag
 
-    static InitialState =  {
+    static InitialState = {
         started: false,     // Timer has started (but possibly being paused)
         alarming: false,    // Timer entered alarm period (defined by props.alarmBefore)
         stopped: false,     // Timer is being stopped/paused
@@ -38,6 +43,7 @@ export class VisualTimer extends React.Component {
         elapsedSecs: 0,      // Elapsed running seconds since start
         showHours: false    // Whether to display hours
     };
+    /*  Component state */
     state = Object.assign({}, VisualTimer.InitialState);
 
     static DefaultClockFace = {
@@ -59,12 +65,13 @@ export class VisualTimer extends React.Component {
         so it's safe to save as instance variables for reuse
          */
         this.totalSecs = (props.seconds || (props.minutes || 0) * 60) || 0;
-        this.alarmSecs = this.props.alarmBefore || 10;
+        this.alarmSecs = this.props.alarmBefore || (this.totalSecs >= 20 ? 10 : 0);
         /*  Decide whether to display hours */
         const hours = Math.floor(this.totalSecs / 3600) % 60;
         this.state.showHours = this.props.showHours || hours >= 1;
     }
 
+    /* Update clock face values for render(). Moved to standalone method to make render() clean */
     updateClockFace(remainingSecs, forceUpdate = false) {
         /*  Calculate decimal digits, just basic arithmetic */
         const secs = remainingSecs % 60;
@@ -97,12 +104,22 @@ export class VisualTimer extends React.Component {
             this.clockFace = Object.assign({}, VisualTimer.DefaultClockFace);
             this.updateClockFace(this.totalSecs, true);
         }
+        const speed = Math.round(this.props.speed || 1);
         if (!this.timer) {
-            const speed = Math.round(this.props.speed || 1);
+            let secondCount = 0;
+            this.startTime = Date.now();
             this.timer = setInterval(() => {
-                    if (!this.state.started || this.state.stopped) return;
-                    this.setState(state => ({elapsedSecs: state.elapsedSecs + 1}));
-                    const remainingSecs = this.totalSecs - this.state.elapsedSecs;
+                    //  Only proceed if past time resolution step
+                    const elapsedSecs = Math.floor((Date.now() - this.startTime) / 1000);
+                    if (elapsedSecs <= secondCount)
+                        return;
+                    if (!this.state.started || this.state.stopped) {
+                        return;
+                    }
+                    secondCount++;
+                    console.log(elapsedSecs, secondCount);
+                    this.setState(state => ({elapsedSecs: secondCount}));
+                    const remainingSecs = this.totalSecs - secondCount;
                     if (remainingSecs <= 0) {
                         this.end();
                     }
@@ -111,9 +128,10 @@ export class VisualTimer extends React.Component {
                     });
                     this.updateClockFace(remainingSecs);
                 },
-                /* calling timer handler every one second, or less depending on speed */
-                Math.round(1000 / speed)
-            );
+                /* calling timer handler every one-tenth second, or more or less depending on resolution */
+                Math.round(1000 * this.timeResolution)
+            )
+        } else {
         }
         this.setState(
             {started: true, stopped: false});
@@ -136,6 +154,7 @@ export class VisualTimer extends React.Component {
         if (this.timer) {
             clearInterval(this.timer);
             this.timer = null;
+            this.startTime = NaN;
         }
 
         if (this.props.onEnd) {
@@ -151,22 +170,23 @@ export class VisualTimer extends React.Component {
     }
 
     componentDidUpdate() {
+        /*  Check for change from props.running control flag, and start/stop timer accordingly\
+        */
         if (this.running === this.props.running) return;
         this.running = this.props.running;
         if ((!this.state.started || this.state.stopped || this.state.ended) && this.running) {
-            this.start(false);  // Start without callback as it may create loops
+            this.start(false);  // Suppress callback as it may create loops
         } else if (this.state.started && !this.state.stopped && this.running === false) {
             this.stop();
         }
     }
 
     render() {
-        if (!this.totalSecs) return null;
+        if (!this.totalSecs) return null;   // Fall back to nothing if missing user parameters
         const {hour1, hour2, min1, min2, sec1, sec2} = this.clockFace;
         return (
             <div className={'VisualTimer' + (this.state.alarming ? ' alarming' : '')}
                  style={{borderStyle: 'solid'}}>
-
                 <div className="countdown">
                     {this.state.showHours &&
                     <div className="bloc-time hours">
@@ -248,8 +268,8 @@ export class VisualTimer extends React.Component {
                 </div>
 
                 {/*Display visual progress*/}
-                { (this.state.started || this.state.ended) &&
-                    <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs}/>
+                {(this.state.started || this.state.ended) &&
+                <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs}/>
                 }
             </div>
         );

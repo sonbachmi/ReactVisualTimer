@@ -94,44 +94,60 @@ export class VisualTimer extends React.Component {
         }
     }
 
+    clearTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+            this.startTime = NaN;
+        }
+    }
+
     /* Start (or resume) timer. Can optionally decide whether to suppress notifying consumer by callback,
          typically when consumer actively initiated this */
     start(notify = true) {
         if (!this.totalSecs) return;
+        /* Check for current total elapsed seconds, this may not be zero when timer has been paused */
+        let totalElapsedSecs = this.state.elapsedSecs;
         /*  If timer already ended, then reset state */
         if (this.state.ended) {
             this.setState(VisualTimer.InitialState);
+            totalElapsedSecs = 0;
             this.clockFace = Object.assign({}, VisualTimer.DefaultClockFace);
-            this.updateClockFace(this.totalSecs, true);
+            this.updateClockFace(this.totalSecs);
         }
         const speed = Math.round(this.props.speed || 1);
+        const scale = 1000/speed;
         if (!this.timer) {
-            let secondCount = 0;
-            this.startTime = Date.now();
+            // Base time for comparison must take into account total elapsed time before pausing
+            this.startTime = Date.now() - totalElapsedSecs * scale;
+            //  setInterval timer handler
             this.timer = setInterval(() => {
-                    //  Only proceed if past time resolution step
-                    const elapsedSecs = Math.floor((Date.now() - this.startTime) / 1000);
-                    if (elapsedSecs <= secondCount)
+                    //  Only proceed if one more second passed since last check
+                    const elapsedSecs = Math.floor((Date.now() - this.startTime) / scale);
+                    if (elapsedSecs <= totalElapsedSecs)
                         return;
-                    if (!this.state.started || this.state.stopped) {
+                    //  Omly proceed if timer running
+                    if (!this.state.started || this.state.stopped || this.state.ended) {
                         return;
                     }
-                    secondCount++;
-                    console.log(elapsedSecs, secondCount);
-                    this.setState(state => ({elapsedSecs: secondCount}));
-                    const remainingSecs = this.totalSecs - secondCount;
+                    //  If one second passed, update state and clock
+                    totalElapsedSecs++;
+                    this.setState(state => ({elapsedSecs: totalElapsedSecs}));
+                    const remainingSecs = this.totalSecs - totalElapsedSecs;
+                    // If timeout reached, end timer
                     if (remainingSecs <= 0) {
                         this.end();
+                    } else {
+                        // If alarm timeout reached, update state
+                        this.setState({
+                            alarming: remainingSecs < this.alarmSecs
+                        });
                     }
-                    this.setState({
-                        alarming: remainingSecs < this.alarmSecs
-                    });
-                    this.updateClockFace(remainingSecs);
+                    this.updateClockFace(remainingSecs, true);
                 },
                 /* calling timer handler every one-tenth second, or more or less depending on resolution */
-                Math.round(1000 * this.timeResolution)
+                Math.round(1000 * this.timerResolution)
             )
-        } else {
         }
         this.setState(
             {started: true, stopped: false});
@@ -140,23 +156,21 @@ export class VisualTimer extends React.Component {
         }
     }
 
+    /* Stop/pause timer */
     stop() {
         this.setState(
             {stopped: true});
+        this.clearTimer();
         if (this.props.onStop) {
             this.props.onStop();
         }
     }
 
+    /* End timer when timeout reached */
     end() {
         this.setState(
             {started: false, stopped: false, ended: true});
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-            this.startTime = NaN;
-        }
-
+        this.clearTimer();
         if (this.props.onEnd) {
             this.props.onEnd();
         }
@@ -269,7 +283,8 @@ export class VisualTimer extends React.Component {
 
                 {/*Display visual progress*/}
                 {(this.state.started || this.state.ended) &&
-                <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs}/>
+                <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs}
+                alarming={this.state.alarming && !this.state.ended}/>
                 }
             </div>
         );
@@ -277,10 +292,7 @@ export class VisualTimer extends React.Component {
 
     componentWillUnmount() {
         /*  Dispose timer on cleanup. Failing to do this will cause bad leaks */
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-        }
+        this.clearTimer();
     }
 }
 

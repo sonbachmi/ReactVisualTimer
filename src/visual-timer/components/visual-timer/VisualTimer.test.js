@@ -46,7 +46,7 @@ test('auto starts and decrements seconds by 1 after 1 second', () => {
     jest.useFakeTimers();
     const { container } = render(<VisualTimer seconds={defaultSecs} autoStart={true}/>);
     act(() => {
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(1200);
     });
     const secondx10  = container.querySelector('.figure.sec-1 .top');
     const second = container.querySelector('.figure.sec-2 .top');

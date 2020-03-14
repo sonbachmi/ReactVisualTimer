@@ -3,9 +3,12 @@
   "version": "0.0.3",
   "keywords": [
     "react",
+    "reactjs",
     "javascript",
     "timer",
+    "countdown",
     "clock",
+    "component",
     "animation"
   ],
   "license": "MIT",

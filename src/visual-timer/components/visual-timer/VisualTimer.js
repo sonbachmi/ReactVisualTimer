@@ -1,44 +1,72 @@
 import React from "react";
+import PropTypes from 'prop-types';
 
 import {VisualProgress} from "../visual-progress/VisualProgress";
 import "./VisualTimer.scss";
+
+const propTypes = {
+    seconds: PropTypes.number,      // Timeout in seconds
+    minutes: PropTypes.number,      // Timeout in minutes (overridden by seconds if present)
+    showHours: PropTypes.bool,      // Display hours, default hidden unless necessary
+    autoStart: PropTypes.bool,      // Auto run timer immediately
+    alarmBefore: PropTypes.number,  // Timeout in seconds before entering alarm state
+    visualStyle: PropTypes.string,  // For now this is ignored and only one value 'flipclock' is used
+    /*  State management and communication with consumer    */
+    running: PropTypes.bool,        // Flag to control timer. Use this to start/stop timer instead of calling component methods directly
+    onStart: PropTypes.func,        // Callback when timer starts
+    onStop: PropTypes.func,         // Callback when timer stops
+    onEnd: PropTypes.func,          // Callback when timer reaches timeout
+    /*  Extra settings  */
+    speed: PropTypes.number         // Speed multiplication factor (x2, etc.) useful for testing long timeout
+};
 
 export class VisualTimer extends React.Component {
 
     /* JavaScript setInterval timer instance */
     timer = null;
 
-    style = 'flipclock';
+    totalSecs = 0;          // Store value for timeout in total seconds
+    alarmSecs = 10;          // Store value for alarm timeout in seconds
 
-    totalSecs = 0;
-    alarmSecs = 3;
+    running = false;        // Store the state of running to detect change against props.running control flag
 
-    running = false;
-
-    state = {
-        started: false,
-        alarming: false,
-        stopped: false,
-        elapsedSecs: 0,
-        clockFace: {
-            /* Store display values for two digits of each time component
-            * Updated by timer logic, and read by render()  */
-            hour1: 0,
-            hour2: 0,
-            min1: 0,
-            min2: 0,
-            sec1: 0,
-            sec2: 0
-        }
+    static InitialState =  {
+        started: false,     // Timer has started (but possibly being paused)
+        alarming: false,    // Timer entered alarm period (defined by props.alarmBefore)
+        stopped: false,     // Timer is being stopped/paused
+        ended: false,     // Timer ended (reached timeout)
+        elapsedSecs: 0,      // Elapsed running seconds since start
+        showHours: false    // Whether to display hours
     };
+    state = Object.assign({}, VisualTimer.InitialState);
+
+    static DefaultClockFace = {
+        hour1: 0,
+        hour2: 0,
+        min1: 0,
+        min2: 0,
+        sec1: 0,
+        sec2: 0
+    };
+    /* Store display values for two digits of each time component
+    * Updated by timer logic, and read by render()  */
+    clockFace = Object.assign({}, VisualTimer.DefaultClockFace);
 
     constructor(props) {
         super(props);
 
+        /*  These parameters are not expected to change during a timer run,
+        so it's safe to save as instance variables for reuse
+         */
         this.totalSecs = (props.seconds || (props.minutes || 0) * 60) || 0;
+        this.alarmSecs = this.props.alarmBefore || 10;
+        /*  Decide whether to display hours */
+        const hours = Math.floor(this.totalSecs / 3600) % 60;
+        this.state.showHours = this.props.showHours || hours >= 1;
     }
 
-    updateClockFace(remainingSecs) {
+    updateClockFace(remainingSecs, forceUpdate = false) {
+        /*  Calculate decimal digits, just basic arithmetic */
         const secs = remainingSecs % 60;
         const sec2 = secs % 10;
         const sec1 = Math.floor(secs / 10) % 60;
@@ -47,17 +75,28 @@ export class VisualTimer extends React.Component {
         const min1 = Math.floor(mins / 10);
         let hour1 = 0;
         let hour2 = 0;
+        const hours = Math.floor(remainingSecs / 3600) % 60;
         if (this.props.showHours) {
-            const hours = Math.floor(remainingSecs / 3600) % 60;
             hour2 = hours % 10;
             hour1 = Math.floor(hours / 10);
-            this.setState({clockFace: {hour1, hour2}});
         }
-        this.setState({clockFace: {sec1, sec2, min1, min2, hour1, hour2}});
+        this.clockFace = {sec1, sec2, min1, min2, hour1, hour2};
+        /*  Since clockFace is not part of state and hence no change detection, sometimes this is necessary */
+        if (forceUpdate) {
+            this.forceUpdate();
+        }
     }
 
-    start() {
+    /* Start (or resume) timer. Can optionally decide whether to suppress notifying consumer by callback,
+         typically when consumer actively initiated this */
+    start(notify = true) {
         if (!this.totalSecs) return;
+        /*  If timer already ended, then reset state */
+        if (this.state.ended) {
+            this.setState(VisualTimer.InitialState);
+            this.clockFace = Object.assign({}, VisualTimer.DefaultClockFace);
+            this.updateClockFace(this.totalSecs, true);
+        }
         if (!this.timer) {
             const speed = Math.round(this.props.speed || 1);
             this.timer = setInterval(() => {
@@ -78,73 +117,82 @@ export class VisualTimer extends React.Component {
         }
         this.setState(
             {started: true, stopped: false});
+        if (notify && this.props.onStart) {
+            this.props.onStart();
+        }
     }
 
     stop() {
         this.setState(
             {stopped: true});
+        if (this.props.onStop) {
+            this.props.onStop();
+        }
     }
 
     end() {
         this.setState(
-            {started: false, stopped: false});
+            {started: false, stopped: false, ended: true});
         if (this.timer) {
             clearInterval(this.timer);
+            this.timer = null;
+        }
+
+        if (this.props.onEnd) {
+            this.props.onEnd();
         }
     }
 
     componentDidMount() {
-        this.updateClockFace(this.totalSecs);
+        this.updateClockFace(this.totalSecs, true);
         if (this.props.autoStart) {
             this.start();
-            this.forceUpdate();
         }
     }
 
     componentDidUpdate() {
         if (this.running === this.props.running) return;
         this.running = this.props.running;
-        if ((!this.state.started || this.state.stopped) && this.props.running) {
-            this.start();
-        } else if (this.state.started && !this.state.stopped && this.props.running === false) {
+        if ((!this.state.started || this.state.stopped || this.state.ended) && this.running) {
+            this.start(false);  // Start without callback as it may create loops
+        } else if (this.state.started && !this.state.stopped && this.running === false) {
             this.stop();
         }
     }
 
     render() {
         if (!this.totalSecs) return null;
-        const {hour1, hour2, min1, min2, sec1, sec2} = this.state.clockFace;
+        const {hour1, hour2, min1, min2, sec1, sec2} = this.clockFace;
         return (
             <div className={'VisualTimer' + (this.state.alarming ? ' alarming' : '')}
                  style={{borderStyle: 'solid'}}>
 
                 <div className="countdown">
-                    {
-                        this.props.showHours &&
-                        <div className="bloc-time hours">
-                            <span className="count-title">Hours</span>
-                            <div className="figure hours hour-1">
-                                <span className="top">{hour1}</span>
-                                <span className="top-back">
+                    {this.state.showHours &&
+                    <div className="bloc-time hours">
+                        <span className="count-title">Hours</span>
+                        <div className="figure hours hour-1">
+                            <span className="top">{hour1}</span>
+                            <span className="top-back">
                 <span>{hour1}</span>
               </span>
-                                <span className="bottom">{hour1}</span>
-                                <span className="bottom-back">
+                            <span className="bottom">{hour1}</span>
+                            <span className="bottom-back">
                 <span>{hour1}</span>
               </span>
-                            </div>
-
-                            <div className="figure hours hour-2">
-                                <span className="top">{hour2}</span>
-                                <span className="top-back">
-                <span>{hour2}</span>
-              </span>
-                                <span className="bottom">{hour2}</span>
-                                <span className="bottom-back">
-                <span>{hour2}</span>
-              </span>
-                            </div>
                         </div>
+
+                        <div className="figure hours hour-2">
+                            <span className="top">{hour2}</span>
+                            <span className="top-back">
+                <span>{hour2}</span>
+              </span>
+                            <span className="bottom">{hour2}</span>
+                            <span className="bottom-back">
+                <span>{hour2}</span>
+              </span>
+                        </div>
+                    </div>
                     }
 
                     <div className="bloc-time min">
@@ -200,8 +248,7 @@ export class VisualTimer extends React.Component {
                 </div>
 
                 {/*Display visual progress*/}
-                {
-                    this.state.started &&
+                { (this.state.started || this.state.ended) &&
                     <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs}/>
                 }
             </div>
@@ -209,9 +256,12 @@ export class VisualTimer extends React.Component {
     }
 
     componentWillUnmount() {
-        /*  Dispose timer on cleanup. Failing to do this will cause disaster */
+        /*  Dispose timer on cleanup. Failing to do this will cause bad leaks */
         if (this.timer) {
             clearInterval(this.timer);
+            this.timer = null;
         }
     }
 }
+
+VisualTimer.propTypes = propTypes;

@@ -1,6 +1,8 @@
 {
-  "name": "react-visual-timer",
+  "name": "react-visual-timer-app",
   "version": "0.0.3",
+  "private": true,
+  "description": "React component for visual time control clock",
   "keywords": [
     "react",
     "reactjs",
@@ -24,7 +26,8 @@
     "@testing-library/user-event": "^7.2.1",
     "react": "^16.13.0",
     "react-dom": "^16.13.0",
-    "react-scripts": "3.4.0"
+    "react-scripts": "3.4.0",
+    "react-visual-timer": "file:package"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -5,4 +5,10 @@ React component of animated time control clock
 ~~~~
     $ npm install react-visual-timer
 ~~~~
-Full documentation and demo coming soon.
+Import and use in your React component:
+~~~~
+    import VisualTimer from 'react-visual-timer';
+    ...
+    <VisualTimer mintues={30} />
+~~~~
+

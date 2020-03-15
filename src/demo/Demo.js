@@ -1,8 +1,9 @@
 import React from "react";
+import VisualTimer from "react-visual-timer";
 
 import "./Demo.scss";
-import {VisualTimer} from "../visual-timer/components/visual-timer/VisualTimer";
 
+console.log(VisualTimer);
 export class Demo extends React.Component {
     state = {
         timerRunning: false,
@@ -40,14 +41,14 @@ export class Demo extends React.Component {
     render() {
         return (
             <div className="Demo">
-                <VisualTimer minutes={3} seconds={20} autoStart={true} speed={10} running={this.state.timerRunning}
+{/*                <VisualTimer minutes={3} seconds={20} autoStart={true} speed={10} running={this.state.timerRunning}
                              onStart={this.onStart} onStop={this.onStop} onEnd={this.onEnd}/>
                 {this.state.showRestartButton ?
                     <button onClick={this.restartTimer}>Restart</button>
                     : !this.state.showStopButton ?
                         <button onClick={this.startTimer}>{this.state.timerStopped ? 'Resume' : 'Start'}</button>
                         : <button onClick={this.stopTimer}>Stop</button>
-                }
+                }*/}
             </div>
         );
     }

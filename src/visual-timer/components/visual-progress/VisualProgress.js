@@ -13,8 +13,8 @@ export function VisualProgress({total = 0, current = 0, alarming}) {
 
     if (!total) return null;
 
-    /* Progress percentage as string for setting CSS width */
-    const percentage = total && Math.round(current * 100 / total) || 0;
+    /* Progress percentage for setting CSS of display */
+    const percentage = (total && Math.round(current * 100 / total)) || 0;
     return (
         <div className={'VisualProgress' + (alarming ? ' alarming' : '')}>
             {visualStyle === 'bar' &&

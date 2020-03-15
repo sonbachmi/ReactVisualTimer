@@ -6,7 +6,7 @@ import "./VisualTimer.scss";
 
 const propTypes = {
     seconds: PropTypes.number,      // Timeout in seconds
-    minutes: PropTypes.number,      // Timeout in minutes (overridden by seconds if present)
+    minutes: PropTypes.number,      // Timeout in minutes (added to seconds if any)
     showHours: PropTypes.bool,      // Display hours, default hidden unless necessary
     showLabels: PropTypes.bool,      // Display labels above digits, default shown
     showProgress: PropTypes.bool,      // Display progress indicator below clock, default shown
@@ -66,7 +66,9 @@ export class VisualTimer extends React.Component {
         /*  These parameters are not expected to change during a timer run,
         so it's safe to save as instance variables for reuse
          */
-        this.totalSecs = (props.seconds || (props.minutes || 0) * 60) || 0;
+        this.totalSecs = props.seconds || 0;
+        if (props.minutes)
+            this.totalSecs += props.minutes * 60;
         this.alarmSecs = this.props.alarmBefore || (this.totalSecs >= 20 ? 10 : 0);
         /*  Decide whether to display hours */
         const hours = Math.floor(this.totalSecs / 3600);

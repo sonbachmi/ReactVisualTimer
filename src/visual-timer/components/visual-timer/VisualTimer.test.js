@@ -26,7 +26,7 @@ test('renders all digits except hours with initial values matching total seconds
 test('renders hours when enabled with initial values 0', () => {
     const { container } = render(<VisualTimer id="testComponent" seconds={defaultSecs} showHours={true} />);
     ['hour-1', 'hour-2'].forEach(digitName => {
-        const digit  = container.querySelector('.figure.' + digitName + ' .top');
+        const digit = container.querySelector('.figure.' + digitName + ' .top');
         expect(digit && digit.textContent).toBe('0');
     });
 });
@@ -39,18 +39,43 @@ test('by default is not running after 5 seconds', () => {
     const secondUnit  = container.querySelector('.figure.sec-2 .top');
     expect(secondUnit.textContent).toBe('0');
 });
-test('auto starts and decrements seconds by 1 after 1 second', () => {
+/*test('auto starts and decrements seconds by 1 after 1 second', () => {
     const secs = defaultSecs % 60;
     const sec2 = secs % 10;
     const sec1 = Math.floor(secs / 10) % 60;
     jest.useFakeTimers();
-    const { container } = render(<VisualTimer seconds={defaultSecs} autoStart={true}/>);
+    const { container } = render(<VisualTimer seconds={defaultSecs} autoStart={true} speed={2}/>);
     act(() => {
-        jest.advanceTimersByTime(1200);
+        jest.advanceTimersByTime(1000);
     });
     const secondx10  = container.querySelector('.figure.sec-1 .top');
     const second = container.querySelector('.figure.sec-2 .top');
     console.log(secondx10.textContent, second.textContent);
     expect(+secondx10.textContent).toBe(sec1-1);
     expect(second.textContent).toBe('9');
+});*/
+
+describe('Display switches', () => {
+    test('showLabels=true should show all labels', () => {
+        const {container} = render(<VisualTimer seconds={defaultSecs} showLabels={true}/>);
+        const hours  = container.querySelectorAll('.count-title');
+        expect(hours.length).toBeGreaterThan(0);
+    });
+    test('showLabels=false should hide all labels', () => {
+        const {container} = render(<VisualTimer seconds={defaultSecs} showLabels={false}/>);
+        const hours  = container.querySelectorAll('.count-title');
+        expect(hours.length).toBe(0);
+    });
+    test('showProgress=true should show progress component', () => {
+        const {container} = render(<VisualTimer seconds={defaultSecs} autoStart={true} showProgress={true}/>);
+        const progress = container.querySelector('.VisualProgress');
+        expect(progress).toBeInTheDocument();
+    });
+    test('showProgress=false should hide progress component', () => {
+        const {container} = render(<VisualTimer seconds={defaultSecs} autoStart={true} showProgress={false}/>);
+        const progress = container.querySelector('.VisualProgress');
+        expect(progress).toBeFalsy();
+    });
+
 });
+

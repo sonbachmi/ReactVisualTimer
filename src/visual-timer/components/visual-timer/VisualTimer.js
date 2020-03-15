@@ -8,9 +8,11 @@ const propTypes = {
     seconds: PropTypes.number,      // Timeout in seconds
     minutes: PropTypes.number,      // Timeout in minutes (overridden by seconds if present)
     showHours: PropTypes.bool,      // Display hours, default hidden unless necessary
+    showLabels: PropTypes.bool,      // Display labels above digits, default shown
+    showProgress: PropTypes.bool,      // Display progress indicator below clock, default shown
     autoStart: PropTypes.bool,      // Auto run timer immediately
     alarmBefore: PropTypes.number,  // Timeout in seconds before entering alarm state
-    visualStyle: PropTypes.string,  // For now this is ignored and only one value 'flipclock' is used
+    clockStyle: PropTypes.string,  // For now this is ignored and only one value 'flipclock' is used
     /*  State management and communication with consumer    */
     running: PropTypes.bool,        // Flag to control timer. Use this to start/stop timer instead of calling component methods directly
     onStart: PropTypes.func,        // Callback when timer starts
@@ -67,8 +69,8 @@ export class VisualTimer extends React.Component {
         this.totalSecs = (props.seconds || (props.minutes || 0) * 60) || 0;
         this.alarmSecs = this.props.alarmBefore || (this.totalSecs >= 20 ? 10 : 0);
         /*  Decide whether to display hours */
-        const hours = Math.floor(this.totalSecs / 3600) % 60;
-        this.state.showHours = this.props.showHours || hours >= 1;
+        const hours = Math.floor(this.totalSecs / 3600);
+        this.state.showHours = this.props.showHours || hours > 0;
     }
 
     /* Update clock face values for render(). Moved to standalone method to make render() clean */
@@ -82,13 +84,13 @@ export class VisualTimer extends React.Component {
         const min1 = Math.floor(mins / 10);
         let hour1 = 0;
         let hour2 = 0;
-        const hours = Math.floor(remainingSecs / 3600) % 60;
-        if (this.props.showHours) {
+        const hours = Math.floor(remainingSecs / 3600) % 100;
+        if (this.state.showHours) {
             hour2 = hours % 10;
             hour1 = Math.floor(hours / 10);
         }
         this.clockFace = {sec1, sec2, min1, min2, hour1, hour2};
-        /*  Since clockFace is not part of state and hence no change detection, sometimes this is necessary */
+        /*  Since clockFace is not part of state and hence no change detection, this is often necessary */
         if (forceUpdate) {
             this.forceUpdate();
         }
@@ -197,14 +199,17 @@ export class VisualTimer extends React.Component {
 
     render() {
         if (!this.totalSecs) return null;   // Fall back to nothing if missing user parameters
+        const {showLabels = true, showProgress = true} = this.props;
         const {hour1, hour2, min1, min2, sec1, sec2} = this.clockFace;
         return (
-            <div className={'VisualTimer' + (this.state.alarming ? ' alarming' : '')}
+            <div className={'VisualTimer' + (this.state.alarming && !this.state.ended ? ' alarming' : '')}
                  style={{borderStyle: 'solid'}}>
                 <div className="countdown">
                     {this.state.showHours &&
                     <div className="bloc-time hours">
+                        {showLabels &&
                         <span className="count-title">Hours</span>
+                        }
                         <div className="figure hours hour-1">
                             <span className="top">{hour1}</span>
                             <span className="top-back">
@@ -230,7 +235,9 @@ export class VisualTimer extends React.Component {
                     }
 
                     <div className="bloc-time min">
+                        {showLabels &&
                         <span className="count-title">Minutes</span>
+                        }
 
                         <div className="figure min min-1">
                             <span className="top">{min1}</span>
@@ -255,7 +262,9 @@ export class VisualTimer extends React.Component {
                         </div>
                     </div>
                     <div className="bloc-time sec">
+                        {showLabels &&
                         <span className="count-title">Seconds</span>
+                        }
 
                         <div className="figure sec sec-1">
                             <span className="top">{sec1}</span>
@@ -283,7 +292,8 @@ export class VisualTimer extends React.Component {
 
                 {/*Display visual progress*/}
                 {(this.state.started || this.state.ended) &&
-                <VisualProgress totalSecs={this.totalSecs} elapsedSecs={this.state.elapsedSecs}
+                showProgress &&
+                <VisualProgress total={this.totalSecs} current={this.state.elapsedSecs}
                 alarming={this.state.alarming && !this.state.ended}/>
                 }
             </div>

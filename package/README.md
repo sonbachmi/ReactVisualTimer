@@ -22,4 +22,4 @@ You can further customize or control the component with additional props:
         onEnd={() => console.log('You run out of time!')}
          />
 ~~~~
-Full documentation and demo coming soon.
+See full documentation on project website.

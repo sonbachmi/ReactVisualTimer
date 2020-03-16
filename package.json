@@ -1,17 +1,16 @@
 {
   "name": "react-visual-timer-app",
-  "version": "0.0.3",
-  "private": true,
-  "description": "React component for visual time control clock",
+  "version": "0.0.8",
+  "description": "Container app for react-visual-timer: React component for visual time control clock",
   "keywords": [
     "react",
     "reactjs",
-    "javascript",
+    "reactjs-component",
     "timer",
+    "timer-clock",
     "countdown",
     "clock",
-    "component",
-    "animation"
+    "javascript"
   ],
   "author": "Son Nguyen",
   "homepage": "https://github.com/sonbachmi/ReactVisualTimer",
@@ -26,7 +25,7 @@
     "react": "^16.13.0",
     "react-dom": "^16.13.0",
     "react-scripts": "3.4.0",
-    "react-visual-timer": "file:package"
+    "react-visual-timer": "0.0.8"
   },
   "scripts": {
     "start": "react-scripts start",

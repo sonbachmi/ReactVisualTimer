@@ -1,16 +1,16 @@
 {
   "name": "react-visual-timer",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "React component for visual time control clock",
   "keywords": [
     "react",
     "reactjs",
-    "javascript",
+    "reactjs-component",
     "timer",
+    "timer-clock",
     "countdown",
     "clock",
-    "component",
-    "animation"
+    "javascript"
   ],
   "license": "MIT",
   "author": "Son Nguyen",
@@ -20,31 +20,24 @@
     "url": "https://github.com/sonbachmi/ReactVisualTimer"
   },
   "peerDependencies": {
-    "react": "^15.0.0",
-    "react-dom": "^15.0.0"
+    "react": "^15.0.0"
   },
   "scripts": {
-    "dev": "webpack --watch",
-    "build": "webpack",
-    "publish": "npm publish"
+    "dev:lib": "webpack --watch",
+    "build:lib": "webpack",
+    "publish:lib": "npm publish"
   },
   "devDependencies": {
-    "@babel/cli": "^7.8.4",
     "@babel/core": "^7.8.7",
     "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@babel/preset-env": "^7.8.7",
     "@babel/preset-react": "^7.8.3",
     "babel-loader": "^8.0.6",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-plugin-transform-react-jsx": "^6.24.1",
-    "babel-preset-env": "^1.7.0",
     "node-sass": "^4.13.1",
     "react": "^16.13.0",
-    "react-dom": "^16.13.0",
     "sass-loader": "^8.0.2",
+    "webpack": "^4.42.0",
     "webpack-cli": "^3.3.11"
   },
-  "dependencies": {
-    "webpack": "^4.42.0"
-  }
+  "dependencies": {}
 }

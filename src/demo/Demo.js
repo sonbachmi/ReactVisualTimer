@@ -40,7 +40,7 @@ export class Demo extends React.Component {
     render() {
         return (
             <div className="Demo">
-                <VisualTimer minutes={3} seconds={20} autoStart={true} speed={1} running={this.state.timerRunning}
+                <VisualTimer minutes={3} seconds={20} autoStart={false} speed={1} running={this.state.timerRunning}
                              onStart={this.onStart} onStop={this.onStop} onEnd={this.onEnd}/>
                 {this.state.showRestartButton ?
                     <button onClick={this.restartTimer}>Restart</button>

@@ -31,7 +31,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "storybook": "start-storybook -p 9009 -s public",
+    "build-storybook": "build-storybook -s public"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -49,7 +51,13 @@
     ]
   },
   "devDependencies": {
-    "node-sass": "^4.13.1",
-    "prettier": "^1.19.1"
+    "@storybook/addon-actions": "^5.3.19",
+    "@storybook/addon-links": "^5.3.19",
+    "@storybook/addons": "^5.3.19",
+    "@storybook/preset-create-react-app": "^3.1.0",
+    "@storybook/react": "^5.3.19",
+    "node-sass": "^4.14.1",
+    "prettier": "^1.19.1",
+    "react-docgen-typescript-plugin": "^0.4.1"
   }
 }
